@@ -28,7 +28,7 @@ namespace SERichPresence.Lib
             {
                 EstablishHandshake(clientId);
                 Log($"Established handshake with Discord client", LogLevel.Success);
-                StartRead();
+                //StartRead();
                 Ready = true;
             }
         }
@@ -151,8 +151,8 @@ namespace SERichPresence.Lib
         public void Dispose()
         {
             Log("Disposing client connection", LogLevel.Info);
-            ReadThread?.Abort();
-            Thread.Sleep(1); //finish while loop or something
+            //ReadThread?.Abort();
+            //Thread.Sleep(101); //finish while loop or something
 
             Stream?.Close();
             Stream?.Dispose();
