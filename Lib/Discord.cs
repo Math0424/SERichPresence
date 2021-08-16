@@ -21,6 +21,7 @@ namespace SERichPresence.Lib
 
         private NamedPipeClientStream Stream;
         private Thread ReadThread;
+        private CancellationTokenSource cancel;
 
         public Discord(long clientId)
         {
@@ -35,7 +36,7 @@ namespace SERichPresence.Lib
 
         public void SetRichPresence(DiscordRichPresence presence)
         {
-            if (Ready)
+            if (Ready && Stream.IsConnected)
             {
                 string nonce = Guid.NewGuid().ToString();
                 int pid = Process.GetCurrentProcess().Id;
@@ -49,39 +50,45 @@ namespace SERichPresence.Lib
 
         private void StartRead()
         {
+            cancel = new CancellationTokenSource();
 
-            ReadThread = new Thread(() => {
+            ReadThread = new Thread(token => {
 
-                while (Stream != null && Stream.IsConnected)
+                CancellationTokenSource cancel = (CancellationTokenSource)token;
+                while (!cancel.IsCancellationRequested && Stream != null && Stream.IsConnected)
                 {
                     if (Stream.CanRead)
                     {
-                        var code = Stream.ReadInt32();
-                        int length = Stream.ReadInt32();
+                        var code = Stream?.ReadInt32();
+                        var length = Stream?.ReadInt32();
                         
-                        var data = new byte[length];
-                        Stream.Read(data, 0, length);
-
-                        switch ((OpCode)code)
+                        if (length.HasValue)
                         {
-                            case OpCode.Close:
-                                Log($"Discord requested close of ipc, Disconnecting...", LogLevel.Info);
-                                Ready = false;
-                                Dispose();
-                                break;
+                            var data = new byte[length.Value];
+                            Stream?.Read(data, 0, length.Value);
 
-                            case OpCode.Ping:
-                                Log($"Pong!", LogLevel.Info);
-                                Stream.Write(new Packet(OpCode.Pong, Encoding.UTF8.GetString(data)));
-                                break;
-                                
-                            case OpCode.Frame:
-                            case OpCode.Handshake:
-                            case OpCode.Pong:
-                                break;
-                            default:
-                                Log($"Recieved unknown code ({code}) with length {length}");
-                                break;
+                            switch ((OpCode)(code.Value))
+                            {
+                                case OpCode.Close:
+                                    Log($"Discord requested close of ipc, Disconnecting...", LogLevel.Info);
+                                    Ready = false;
+                                    Dispose();
+                                    break;
+
+                                case OpCode.Ping:
+                                    Log($"Pong!", LogLevel.Info);
+                                    Stream?.Write(new Packet(OpCode.Pong, Encoding.UTF8.GetString(data)));
+                                    break;
+
+                                case OpCode.Frame:
+                                case OpCode.Handshake:
+                                case OpCode.Pong:
+                                    break;
+                                default:
+                                    Log($"Recieved unknown code ({code}) with length {length}");
+                                    Log($"Message: '{Encoding.UTF8.GetString(data)}'");
+                                    break;
+                            }
                         }
                     }
                     else
@@ -89,12 +96,12 @@ namespace SERichPresence.Lib
                         Log("Unable to read stream");
                     }
 
-                    Thread.Sleep(100);
+                    Thread.Sleep(50);
                 }
             
             });
 
-            ReadThread.Start();
+            ReadThread.Start(cancel);
         }
 
         private void EstablishHandshake(long clientId)
@@ -151,8 +158,7 @@ namespace SERichPresence.Lib
         public void Dispose()
         {
             Log("Disposing client connection", LogLevel.Info);
-            //ReadThread?.Abort();
-            //Thread.Sleep(101); //finish while loop or something
+            cancel?.Cancel();
 
             Stream?.Close();
             Stream?.Dispose();
