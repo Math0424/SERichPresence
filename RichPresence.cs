@@ -99,7 +99,6 @@ namespace SERichPresence
                                 JoinString = MyLocalCache.GetLastSession().ConnectionString;
                             }
                             ServerEntry entry = ServerDict.GetServerEntry(JoinString);
-                            MyLog.Default.WriteLineAndConsole(JoinString);
                             if (entry != null)
                             {
                                 client.SetRichPresence(new DiscordRichPresence()
