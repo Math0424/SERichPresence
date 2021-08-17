@@ -5,7 +5,7 @@
 Want your server to have custom rich-presence? 
 
 Join the discord and request it!
-discord.gg/qpS5MarhYu
+https://discord.gg/qpS5MarhYu
 
 Basic requirements:
 Server is over 50 population on a normal basis.
