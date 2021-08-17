@@ -1,24 +1,37 @@
-﻿using System.Collections.Generic;
+﻿using SERichPresence.Lib;
+using System.Collections.Generic;
 
 namespace SERichPresence
 {
     static class ServerDict
     {
-        private static ServerEntry ksh = new ServerEntry("Keen Official Server", "ksh", "Offical SE Server");
-        private static ServerEntry smd = new ServerEntry("Sigma Draconis", "sigma-draconis", "Sigma Draconis");
-        private static ServerEntry stg = new ServerEntry("Stargate Dimensions", "stargate", "Stargate Dimensions");
-        private static ServerEntry sto = new ServerEntry("Stone Industries", "stone-industries", "Stone Industries");
+        private static DiscordRichPresence ksh = new DiscordRichPresence() { details = "Keen Official Server", largeImageKey = "ksh" };
 
-        private static Dictionary<string, ServerEntry> RegisteredServers = new Dictionary<string, ServerEntry>()
+        private static DiscordRichPresence smd = new DiscordRichPresence() { details = "Sigma Draconis", largeImageKey = "sigma-draconis" };
+        private static DiscordRichPresence smdi = new DiscordRichPresence() { details = "Sigma Draconis Impossible", largeImageKey = "draconis-impossible", smallImageKey = "rage" };
+
+        private static DiscordRichPresence stg = new DiscordRichPresence() { details = "Stargate Dimensions", largeImageKey = "stargate" };
+        private static DiscordRichPresence sto = new DiscordRichPresence() { details = "Stone Industries", largeImageKey = "stone-industries" };
+
+        private static Dictionary<string, DiscordRichPresence> RegisteredServers = new Dictionary<string, DiscordRichPresence>()
         {
             //stone industries
             ["162.83.222.54"] = sto,
 
             //stargate
+            ["95.156.230.112"] = stg,
             ["95.156.230.6"] = stg,
+            ["109.230.239.41"] = stg,
+            ["95.156.230.180"] = stg,
 
             //draconis servers
-            ["51.81.154.23"] = smd,
+            ["51.81.154.232"] = smd,
+            ["51.81.154.231"] = smd,
+            ["51.81.154.236"] = smd,
+
+            //draconis impossible
+            ["51.81.154.234"] = smdi,
+            ["52.82.154.235"] = smdi,
 
             //ksh servers
             ["139.99.144.161"] = ksh,
@@ -36,7 +49,7 @@ namespace SERichPresence
             ["149.202.87.68"] = ksh,
         };
 
-        public static ServerEntry GetServerEntry(string entry)
+        public static DiscordRichPresence? GetServerEntry(string entry)
         {
             if (entry == null)
                 return null;
@@ -49,19 +62,6 @@ namespace SERichPresence
             return null;
         }
 
-    }
-
-    public class ServerEntry
-    {
-        public string Name;
-        public string ImageID;
-        public string LogoText;
-        public ServerEntry(string name, string imageID, string logoText)
-        {
-            Name = name;
-            ImageID = imageID;
-            LogoText = logoText;
-        }
     }
 
 }

@@ -98,21 +98,18 @@ namespace SERichPresence
                             {
                                 JoinString = MyLocalCache.GetLastSession().ConnectionString;
                             }
-                            ServerEntry entry = ServerDict.GetServerEntry(JoinString);
-                            if (entry != null)
+                            var entry = ServerDict.GetServerEntry(JoinString);
+                            if (entry.HasValue)
                             {
-                                client.SetRichPresence(new DiscordRichPresence()
+                                var presence = entry.Value;
+                                presence.buttons = new Button[]
                                 {
-                                    details = entry.Name,
-                                    state = $"{(vanilla ? "" : $"{modCount} mods, ")}{MyAPIGateway.Multiplayer.Players.Count}/{MyAPIGateway.Session.MaxPlayers} players",
-                                    largeImageKey = entry.ImageID,
-                                    largeImageText = entry.LogoText,
-                                    startTimestamp = startTime,
-                                    buttons = new Button[]
-                                    {
-                                        new Button() { label = "Join Game", url = JoinString.Replace("steam://", "steam://connect/") }
-                                    }
-                                });
+                                    new Button() { label = "Join Game", url = JoinString.Replace("steam://", "steam://connect/") }
+                                };
+                                presence.state = $"{(vanilla ? "" : $"{modCount} mods, ")}{MyAPIGateway.Multiplayer.Players.Count}/{MyAPIGateway.Session.MaxPlayers} players";
+                                presence.startTimestamp = startTime;
+
+                                client.SetRichPresence(presence);
                             }
                             else
                             {
