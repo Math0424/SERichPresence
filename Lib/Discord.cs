@@ -8,346 +8,41 @@ using LitJson;
 using System.Threading;
 using System.Diagnostics;
 
-namespace SERichPresence.Lib
+namespace Math0424.Discord
 {
-    /// <summary>
-    /// @Author Math0424
-    /// This is the meat of the plugin and the hardest part
-    /// </summary>
     public class Discord : IDisposable
     {
 
         public bool Ready { get; private set; }
 
-        private NamedPipeClientStream Stream;
-        private Thread ReadThread;
-        private CancellationTokenSource cancel;
+        public DiscordIPC IPC { get; private set; }
+        public DiscordRP RP { get; private set; }
 
-        public Discord(long clientId)
+        public Discord()
         {
-            if (EstablishPipe())
-            {
-                EstablishHandshake(clientId);
-                Log($"Established handshake with Discord client", LogLevel.Success);
-                //StartRead();
-                Ready = true;
-            }
-        }
-
-        public void SetRichPresence(DiscordRichPresence presence)
-        {
-            if (Ready && Stream.IsConnected)
-            {
-                string nonce = Guid.NewGuid().ToString();
-                int pid = Process.GetCurrentProcess().Id;
-                presence.instance = true;
-
-                string output = $"{{\"nonce\":\"{nonce}\",\"cmd\":\"SET_ACTIVITY\",\"args\":{{\"pid\":{pid},\"activity\":{presence.ToJson()}}}}}";
-
-                Stream.Write(new Packet(OpCode.Frame, output));
-            }
-        }
-
-        private void StartRead()
-        {
-            cancel = new CancellationTokenSource();
-
-            ReadThread = new Thread(token => {
-
-                CancellationTokenSource cancel = (CancellationTokenSource)token;
-                while (!cancel.IsCancellationRequested && Stream != null && Stream.IsConnected)
-                {
-                    if (Stream.CanRead)
-                    {
-                        var code = Stream?.ReadInt32();
-                        var length = Stream?.ReadInt32();
-                        
-                        if (length.HasValue)
-                        {
-                            var data = new byte[length.Value];
-                            Stream?.Read(data, 0, length.Value);
-
-                            switch ((OpCode)(code.Value))
-                            {
-                                case OpCode.Close:
-                                    Log($"Discord requested close of ipc, Disconnecting...", LogLevel.Info);
-                                    Ready = false;
-                                    Dispose();
-                                    break;
-
-                                case OpCode.Ping:
-                                    Log($"Pong!", LogLevel.Info);
-                                    Stream?.Write(new Packet(OpCode.Pong, Encoding.UTF8.GetString(data)));
-                                    break;
-
-                                case OpCode.Frame:
-                                case OpCode.Handshake:
-                                case OpCode.Pong:
-                                    break;
-                                default:
-                                    Log($"Recieved unknown code ({code}) with length {length}");
-                                    Log($"Message: '{Encoding.UTF8.GetString(data)}'");
-                                    break;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Log("Unable to read stream");
-                    }
-
-                    Thread.Sleep(50);
-                }
-            
-            });
-
-            ReadThread.Start(cancel);
-        }
-
-        private void EstablishHandshake(long clientId)
-        {
-            var handshake = new Handshake()
-            {
-                client_id = clientId.ToString(),
-                v = "1",
-                steam_id = 244850,
-            };
-            var json = JsonMapper.ToJson(handshake);
-            Stream.Write(new Packet(OpCode.Handshake, json));
-        }
-
-        private bool EstablishPipe()
-        {
-            string discordPipe = null;
-            
-            var pipes = Directory.GetFiles(@"\\.\pipe\");
-            for (var i = 0; i < pipes.Length; i++)
-            {
-                var pipe = pipes[i].Split('\\').Last().Split('-');
-                if (pipe.Length == 3)
-                {
-                    if (pipe[0] == "discord" && pipe[1] == "ipc")
-                    {
-                        Log($"Found discord ipc pipe ({pipe[2]})", LogLevel.Info);
-                        discordPipe = pipes[i];
-                        break;
-                    }
-                }
-            }
-            if (discordPipe != null)
-            {
-                string pipeName = discordPipe.Substring(9);
-                Log($"Establishing connection with '{pipeName}'", LogLevel.Info);
-                Stream = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-                Stream.Connect(1000);
-
-                while (!Stream.IsConnected)
-                    Thread.Sleep(20);
-
-                return true;
-            }
-            Log("Failed to establish connection with Discord ipc!", LogLevel.Error);
-            return false;
-        }
-
-        private static void Log(object o, LogLevel level = LogLevel.Debug)
-        {
-            MyLog.Default.WriteLineAndConsole($"DiscordLog[{level}] {o ?? "null"}");
+            IPC = new DiscordIPC(this);
+            RP = new DiscordRP(this);
         }
 
         public void Dispose()
         {
             Log("Disposing client connection", LogLevel.Info);
-            cancel?.Cancel();
-
-            Stream?.Close();
-            Stream?.Dispose();
-            ReadThread = null;
-            Stream = null;
+            IPC.Dispose();
         }
 
-        private enum LogLevel
+        public static void Log(object o, LogLevel level = LogLevel.Debug)
         {
-            Debug,
-            Error,
-            Info,
-            Severe,
-            Success,
-        }
-
-        private struct Handshake
-        {
-            public string v;
-            public string client_id;
-            public int steam_id;
+            MyLog.Default.WriteLineAndConsole($"DiscordLog[{level}] {o ?? "null"}");
         }
     }
-
-    public struct Button
+    
+    public enum LogLevel
     {
-        public string url;
-        public string label;
-    }
-
-    public struct DiscordRichPresence
-    {
-        public string state; /* max 128 bytes */
-        public string details; /* max 128 bytes */
-        public int? startTimestamp;
-        public int? endTimestamp;
-        public string largeImageKey; /* max 32 bytes */
-        public string largeImageText; /* max 128 bytes */
-        public string smallImageKey; /* max 32 bytes */
-        public string smallImageText; /* max 128 bytes */
-
-        public string partyId; /* max 128 bytes */
-        public int partySize;
-        public int partyMax;
-        //public string matchSecret; /* max 128 bytes */
-        public string joinSecret; /* max 128 bytes */
-        //public string spectateSecret; /* max 128 bytes */
-
-        public bool instance;
-        public Button[] buttons;
-
-        public string ToJson()
-        {
-            StringBuilder builder = new StringBuilder();
-            JsonWriter writer = new JsonWriter(builder);
-
-            writer.WriteObjectStart();
-
-            writer.WritePropertyName("state");
-            writer.Write(state);
-
-            if (details != null)
-            {
-                writer.WritePropertyName("details");
-                writer.Write(details);
-            }
-
-            if (startTimestamp.HasValue)
-            {
-                writer.WritePropertyName("timestamps");
-                writer.WriteObjectStart();
-                writer.WritePropertyName("start");
-                writer.Write(startTimestamp.Value);
-                if (endTimestamp.HasValue)
-                {
-                    writer.WritePropertyName("end");
-                    writer.Write(endTimestamp.Value);
-                }
-                writer.WriteObjectEnd();
-            }
-            
-            writer.WritePropertyName("assets");
-            writer.WriteObjectStart();
-            writer.WritePropertyName("large_image");
-            writer.Write(largeImageKey ?? "null");
-            if (largeImageText != null)
-            {
-                writer.WritePropertyName("large_text");
-                writer.Write(largeImageText);
-            }
-            writer.WritePropertyName("small_image");
-            writer.Write(smallImageKey ?? "null");
-            if (smallImageText != null)
-            {
-                writer.WritePropertyName("small_text");
-                writer.Write(smallImageText);
-            }
-            writer.WriteObjectEnd();
-
-            if (joinSecret != null)
-            {
-                writer.WritePropertyName("secrets");
-                writer.WriteObjectStart();
-                writer.WritePropertyName("join");
-                writer.Write(joinSecret);
-                writer.WriteObjectEnd();
-            }
-
-            if (partyId != null)
-            {
-                writer.WritePropertyName("party");
-                writer.WriteObjectStart();
-                writer.WritePropertyName("id");
-                writer.Write(partyId);
-
-                if (partySize != 0)
-                {
-                    writer.WritePropertyName("size");
-                    writer.WriteArrayStart();
-                    writer.Write(partySize);
-                    writer.Write(partyMax);
-                    writer.WriteArrayEnd();
-                }
-
-                writer.WriteObjectEnd();
-            }
-
-            writer.WritePropertyName("instance");
-            writer.Write(instance);
-
-            if (buttons != null)
-            {
-                writer.WritePropertyName("buttons");
-                writer.WriteArrayStart();
-                foreach (var b in buttons)
-                {
-                    writer.WriteObjectStart();
-                    writer.WritePropertyName("url");
-                    writer.Write(b.url);
-                    writer.WritePropertyName("label");
-                    writer.Write(b.label);
-                    writer.WriteObjectEnd();
-                }
-                writer.WriteArrayEnd();
-            }
-            
-            writer.WriteObjectEnd();
-            return builder.ToString();
-        }
-
-    }
-
-    static class Extenstions
-    {
-        public static void Write(this NamedPipeClientStream stream, Packet data)
-        {
-            var b = data.ToBytes();
-            stream.Write(b, 0, b.Length);
-            stream.Flush();
-        }
-    }
-
-    public enum OpCode
-    {
-        Handshake,
-        Frame,
-        Close,
-        Ping,
-        Pong
-    }
-
-    public class Packet
-    {
-        private OpCode _code;
-        private object _data;
-        public Packet(OpCode code, object data)
-        {
-            _code = code;
-            _data = data;
-        }
-        public byte[] ToBytes()
-        {
-            byte[] d = Encoding.UTF8.GetBytes(_data.ToString());
-            byte[] f = new byte[d.Length + (sizeof(int) * 2)];
-            Array.Copy(BitConverter.GetBytes((int)_code), 0, f, 0, 4);
-            Array.Copy(BitConverter.GetBytes(d.Length), 0, f, 4, 4);
-            Array.Copy(d, 0, f, 8, d.Length);
-            return f;
-        }
+        Debug,
+        Error,
+        Info,
+        Severe,
+        Success,
     }
     
 }

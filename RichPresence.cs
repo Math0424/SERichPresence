@@ -1,10 +1,10 @@
-﻿using Sandbox.Engine.Multiplayer;
+﻿using Math0424.Discord;
+using Sandbox.Engine.Multiplayer;
 using Sandbox.Engine.Networking;
 using Sandbox.Game.Gui;
 using Sandbox.Game.World;
 using Sandbox.Graphics.GUI;
 using Sandbox.ModAPI;
-using SERichPresence.Lib;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -42,7 +42,7 @@ namespace SERichPresence
 
         public void Init(object gameInstance)
         {
-            client = new Discord(876259975733850192);
+            client = new Discord();
             startTime = Now;
         }
 
@@ -84,7 +84,7 @@ namespace SERichPresence
                         bool vanilla = modCount == 0;
                         if (MySession.Static.IsPausable()) //singleplayer
                         {
-                            client.SetRichPresence(new DiscordRichPresence()
+                            client.RP.SetRichPresence(new DiscordRichPresence()
                             {
                                 details = $"{(MyAPIGateway.Session.CreativeMode ? "Creative" : "Survival")} {(vanilla ? "vanilla" : "modded")} singleplayer",
                                 state = $"{(vanilla ? "" : $"{modCount} mods")}",
@@ -109,11 +109,11 @@ namespace SERichPresence
                                 presence.state = $"{(vanilla ? "" : $"{modCount} mods, ")}{MyAPIGateway.Multiplayer.Players.Count}/{MyAPIGateway.Session.MaxPlayers} players";
                                 presence.startTimestamp = startTime;
 
-                                client.SetRichPresence(presence);
+                                client.RP.SetRichPresence(presence);
                             }
                             else
                             {
-                                client.SetRichPresence(new DiscordRichPresence()
+                                client.RP.SetRichPresence(new DiscordRichPresence()
                                 {
                                     details = $"{(MyAPIGateway.Session.CreativeMode ? "Creative" : "Survival")} {(vanilla ? "vanilla" : "modded")} multiplayer",
                                     state = $"{(vanilla ? "" : $"{modCount} mods, ")}{MyAPIGateway.Multiplayer.Players.Count}/{MyAPIGateway.Session.MaxPlayers} players",
@@ -131,7 +131,7 @@ namespace SERichPresence
 
         private void SimpleMessage(string text)
         {
-            client.SetRichPresence(new DiscordRichPresence()
+            client.RP.SetRichPresence(new DiscordRichPresence()
             {
                 state = text,
                 largeImageKey = "se-logo",

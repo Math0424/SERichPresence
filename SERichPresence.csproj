@@ -92,7 +92,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Lib\DiscordRP.cs" />
+    <Compile Include="Lib\Statics.cs" />
     <Compile Include="Lib\Discord.cs" />
+    <Compile Include="Lib\DiscordIPC.cs" />
     <Compile Include="RichPresence.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServerDict.cs" />
