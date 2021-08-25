@@ -23,6 +23,7 @@ namespace Math0424.Discord
                 int pid = Process.GetCurrentProcess().Id;
                 presence.instance = true;
 
+                //Its short so ill just assemble it quickly
                 string output = $"{{\"nonce\":\"{nonce}\",\"cmd\":\"SET_ACTIVITY\",\"args\":{{\"pid\":{pid},\"activity\":{presence.ToJson()}}}}}";
                 Discord.IPC.Write(DiscordIPC.OpCode.Frame, output);
             }

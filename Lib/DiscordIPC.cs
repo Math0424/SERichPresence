@@ -135,8 +135,8 @@ namespace Math0424.Discord
                 Stream = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
                 Stream.Connect(1000);
 
-                while (!Stream.IsConnected)
-                    Thread.Sleep(20);
+                //while (!Stream.IsConnected)
+                //    Thread.Sleep(20);
 
                 return true;
             }

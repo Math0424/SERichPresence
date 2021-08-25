@@ -17,11 +17,13 @@ namespace Math0424.Discord
 
         public DiscordIPC IPC { get; private set; }
         public DiscordRP RP { get; private set; }
+        public DiscordLobby Lobby { get; private set; }
 
         public Discord()
         {
             IPC = new DiscordIPC(this);
             RP = new DiscordRP(this);
+            Lobby = new DiscordLobby(this);
         }
 
         public void Dispose()

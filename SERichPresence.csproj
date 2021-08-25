@@ -92,6 +92,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Lib\DiscordLobby.cs" />
     <Compile Include="Lib\DiscordRP.cs" />
     <Compile Include="Lib\Statics.cs" />
     <Compile Include="Lib\Discord.cs" />
