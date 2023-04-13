@@ -1,19 +1,11 @@
 ﻿using Math0424.Discord;
-using Sandbox.Engine.Multiplayer;
 using Sandbox.Engine.Networking;
-using Sandbox.Game.Gui;
 using Sandbox.Game.World;
 using Sandbox.Graphics.GUI;
 using Sandbox.ModAPI;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using VRage.Plugins;
-using VRage.Utils;
 
 namespace SERichPresence
 {
@@ -51,6 +43,7 @@ namespace SERichPresence
             if (client.Ready)
             {
                 lastUpdate++;
+                lastUpdate = 0;
                 if (lastUpdate == 240)
                 {
                     if (MySession.Static == null || !MySession.Static.Ready)
@@ -84,9 +77,9 @@ namespace SERichPresence
                         bool vanilla = modCount == 0;
                         if (MySession.Static.IsPausable()) //singleplayer
                         {
-                            client.RP.SetRichPresence(new DiscordRichPresence()
+                            client.SetRichPresence(new DiscordRichPresence()
                             {
-                                details = $"{(MyAPIGateway.Session.CreativeMode ? "Creative" : "Survival")} {(vanilla ? "vanilla" : "modded")} singleplayer",
+                                details = $"{(MyAPIGateway.Session.CreativeMode ? "Creative" : "Survival")} {(vanilla ? "vanilla" : "modded")} SP",
                                 state = $"{(vanilla ? "" : $"{modCount} mods")}",
                                 largeImageKey = "se-logo",
                                 startTimestamp = startTime,
@@ -109,29 +102,27 @@ namespace SERichPresence
                                 presence.state = $"{(vanilla ? "" : $"{modCount} mods, ")}{MyAPIGateway.Multiplayer.Players.Count}/{MyAPIGateway.Session.MaxPlayers} players";
                                 presence.startTimestamp = startTime;
 
-                                client.RP.SetRichPresence(presence);
+                                client.SetRichPresence(presence);
                             }
                             else
                             {
-                                client.RP.SetRichPresence(new DiscordRichPresence()
+                                client.SetRichPresence(new DiscordRichPresence()
                                 {
-                                    details = $"{(MyAPIGateway.Session.CreativeMode ? "Creative" : "Survival")} {(vanilla ? "vanilla" : "modded")} multiplayer",
+                                    details = $"{(MyAPIGateway.Session.CreativeMode ? "Creative" : "Survival")} {(vanilla ? "vanilla" : "modded")} MP",
                                     state = $"{(vanilla ? "" : $"{modCount} mods, ")}{MyAPIGateway.Multiplayer.Players.Count}/{MyAPIGateway.Session.MaxPlayers} players",
                                     largeImageKey = "se-logo",
                                     startTimestamp = startTime,
                                 });
                             }
                         }
-                        
                     }
-                    lastUpdate = 0;
                 }
             }
         }
 
         private void SimpleMessage(string text)
         {
-            client.RP.SetRichPresence(new DiscordRichPresence()
+            client.SetRichPresence(new DiscordRichPresence()
             {
                 state = text,
                 largeImageKey = "se-logo",

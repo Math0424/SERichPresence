@@ -1,4 +1,4 @@
-﻿using SERichPresence.Lib;
+﻿using Math0424.Discord;
 using System.Collections.Generic;
 
 namespace SERichPresence
@@ -13,8 +13,14 @@ namespace SERichPresence
         private static DiscordRichPresence stg = new DiscordRichPresence() { details = "Stargate Dimensions", largeImageKey = "stargate" };
         private static DiscordRichPresence sto = new DiscordRichPresence() { details = "Stone Industries", largeImageKey = "stone-industries" };
 
+        private static DiscordRichPresence stc = new DiscordRichPresence() { details = "Starcore", largeImageKey = "starcore" };
+
         private static Dictionary<string, DiscordRichPresence> RegisteredServers = new Dictionary<string, DiscordRichPresence>()
         {
+            //starcore
+            ["136.50.243.88"] = stc,
+            ["184.64.201.192"] = stc,
+
             //stone industries
             ["162.83.222.54"] = sto,
 
