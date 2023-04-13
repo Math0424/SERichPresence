@@ -10,52 +10,46 @@ namespace Math0424.Discord
 {
     public class DiscordIPC : IDisposable
     {
-        public const long client_id = 876259975733850192;
-
         public bool IsConnected { get; private set; }
+        private long ClientID;
         private NamedPipeClientStream Stream;
         private Thread ReadThread;
         private CancellationTokenSource Cancel;
-        private Discord discord;
 
         public void Write(OpCode code, object data)
         {
-            if (Stream.CanWrite)
+            if (!IsConnected)
+                return;
+
+            var b = new IPCPacket(code, data).ToBytes();
+            try
             {
-                var b = new IPCPacket(code, data).ToBytes();
-                try
-                {
-                    Stream.Write(b, 0, b.Length);
-                    Stream.Flush();
-                } 
-                catch
-                {
-                    Stream.Dispose();
-                }
-            }
-            else
+                Stream.Write(b, 0, b.Length);
+                Stream.Flush();
+            } 
+            catch
             {
-                discord.ReConnect();
+                IsConnected = false;
+                Dispose();
             }
         }
 
-        internal DiscordIPC(Discord discord)
+        internal DiscordIPC(long ClientID)
         {
+            this.ClientID = ClientID;
             if (EstablishPipe())
             {
+                IsConnected = true;
                 EstablishHandshake();
                 Discord.Log($"Established handshake with Discord client");
                 StartRead();
-                IsConnected = true;
-            }
+            } 
         }
 
         private void StartRead()
         {
             Cancel = new CancellationTokenSource();
-
             ReadThread = new Thread(token => {
-
                 CancellationTokenSource cancel = (CancellationTokenSource)token;
                 while (!cancel.IsCancellationRequested && Stream != null && Stream.IsConnected)
                 {
@@ -72,19 +66,20 @@ namespace Math0424.Discord
                             switch ((OpCode)(code.Value))
                             {
                                 case OpCode.Close:
-                                    Discord.Log($"Discord requested close of ipc, Disconnecting...");
+                                    Discord.Log($"Discord requested close of ipc reason {Encoding.UTF8.GetString(data)}, Disconnecting...");
                                     IsConnected = false;
                                     Dispose();
                                     break;
-
                                 case OpCode.Ping:
+                                    Discord.Log($"Pong!");
+                                    Write(OpCode.Ping, Encoding.UTF8.GetString(data));
+                                    break;
                                 case OpCode.Frame:
                                 case OpCode.Handshake:
                                 case OpCode.Pong:
                                     break;
                                 default:
                                     Discord.Log($"Recieved unknown code ({code}) with length {length}");
-                                    Discord.Log($"Message: '{Encoding.UTF8.GetString(data)}'");
                                     break;
                             }
                         }
@@ -93,12 +88,10 @@ namespace Math0424.Discord
                     {
                         Discord.Log("Unable to read stream");
                     }
-
                     Thread.Sleep(50);
                 }
 
             });
-
             ReadThread.Start(Cancel);
         }
 
@@ -109,7 +102,7 @@ namespace Math0424.Discord
         {
             var handshake = new Handshake()
             {
-                client_id = client_id.ToString(),
+                client_id = ClientID.ToString(),
                 v = "1",
                 steam_id = 244850,
             };
@@ -146,9 +139,7 @@ namespace Math0424.Discord
                 Stream.Connect(2000);
 
                 if (Stream.IsConnected)
-                {
                     return true;
-                }
             }
             Discord.Log("Failed to establish connection with Discord ipc!");
             return false;
@@ -172,6 +163,7 @@ namespace Math0424.Discord
             Stream?.Close();
             Cancel?.Cancel();
             ReadThread?.Abort();
+            Discord.Log("Disposing client connection");
         }
 
         public enum OpCode

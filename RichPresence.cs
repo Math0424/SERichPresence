@@ -40,12 +40,12 @@ namespace SERichPresence
 
         public void Update()
         {
-            if (client.Ready)
+            lastUpdate++;
+            if (client.IPC?.IsConnected ?? false)
             {
-                lastUpdate++;
-                lastUpdate = 0;
-                if (lastUpdate == 240)
+                if (lastUpdate >= 240)
                 {
+                    lastUpdate = 0;
                     if (MySession.Static == null || !MySession.Static.Ready)
                     {
                         switch (MyScreenManager.Screens.Last()?.GetFriendlyName())
@@ -117,6 +117,11 @@ namespace SERichPresence
                         }
                     }
                 }
+            }
+            else if(lastUpdate >= 1000)
+            {
+                lastUpdate = 0;
+                client.ReConnect();
             }
         }
 

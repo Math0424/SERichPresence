@@ -8,8 +8,6 @@ namespace Math0424.Discord
 {
     public class Discord : IDisposable
     {
-        public bool Ready { get; private set; }
-
         public DiscordIPC IPC { get; private set; }
 
         public Discord()
@@ -19,15 +17,12 @@ namespace Math0424.Discord
 
         public void ReConnect()
         {
-            Ready = false;
-            Dispose();
-            IPC = new DiscordIPC(this);
-            Ready = true;
+            IPC?.Dispose();
+            IPC = new DiscordIPC(876259975733850192);
         }
 
         public void Dispose()
         {
-            Log("Disposing client connection");
             IPC?.Dispose();
         }
 
@@ -35,19 +30,18 @@ namespace Math0424.Discord
         {
             if (IPC.IsConnected)
             {
-                string nonce = Guid.NewGuid().ToString();
                 int pid = Process.GetCurrentProcess().Id;
                 presence.instance = true;
 
                 //Its short so ill just assemble it quickly
-                string output = $"{{\"nonce\":\"{nonce}\",\"cmd\":\"SET_ACTIVITY\",\"args\":{{\"pid\":{pid},\"activity\":{presence.ToJson()}}}}}";
+                string output = $"{{\"nonce\":\"{Guid.NewGuid()}\",\"cmd\":\"SET_ACTIVITY\",\"args\":{{\"pid\":{pid},\"activity\":{presence.ToJson()}}}}}";
                 IPC.Write(DiscordIPC.OpCode.Frame, output);
             }
         }
 
         public static void Log(object o)
         {
-            MyLog.Default.WriteLineAndConsole($"DiscordRP {o ?? "null"}");
+            MyLog.Default.WriteLineAndConsole($"DiscordRP: {o ?? "null"}");
         }
     }
 
