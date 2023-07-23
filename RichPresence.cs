@@ -4,7 +4,9 @@ using Sandbox.Game.World;
 using Sandbox.Graphics.GUI;
 using Sandbox.ModAPI;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using VRage.Game.ModAPI;
 using VRage.Plugins;
 
 namespace SERichPresence
@@ -99,7 +101,7 @@ namespace SERichPresence
                                 {
                                     new Button() { label = "Join Game", url = JoinString.Replace("steam://", "steam://connect/") }
                                 };
-                                presence.state = $"{(vanilla ? "" : $"{modCount} mods, ")}{MyAPIGateway.Multiplayer.Players.Count}/{MyAPIGateway.Session.MaxPlayers} players";
+                                presence.state = $"{(vanilla ? "" : $"{modCount} mods, ")}{PlayerCount()}/{MyAPIGateway.Session.MaxPlayers} players";
                                 presence.startTimestamp = startTime;
 
                                 client.SetRichPresence(presence);
@@ -109,7 +111,7 @@ namespace SERichPresence
                                 client.SetRichPresence(new DiscordRichPresence()
                                 {
                                     details = $"{(MyAPIGateway.Session.CreativeMode ? "Creative" : "Survival")} {(vanilla ? "vanilla" : "modded")} MP",
-                                    state = $"{(vanilla ? "" : $"{modCount} mods, ")}{MyAPIGateway.Multiplayer.Players.Count}/{MyAPIGateway.Session.MaxPlayers} players",
+                                    state = $"{(vanilla ? "" : $"{modCount} mods, ")}{PlayerCount()}/{MyAPIGateway.Session.MaxPlayers} players",
                                     largeImageKey = "se-logo",
                                     startTimestamp = startTime,
                                 });
@@ -123,6 +125,13 @@ namespace SERichPresence
                 lastUpdate = 0;
                 client.ReConnect();
             }
+        }
+
+        private int PlayerCount()
+        {
+            List<IMyPlayer> players = new List<IMyPlayer>();
+            MyAPIGateway.Multiplayer.Players.GetPlayers(players, x => !x.IsBot);
+            return players.Count;
         }
 
         private void SimpleMessage(string text)
